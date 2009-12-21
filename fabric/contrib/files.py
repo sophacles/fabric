@@ -243,7 +243,7 @@ def contains(filename, text, exact=False, use_sudo=False):
         ))
 
 
-def append(filename, text, use_sudo=False):
+def append(filename, text, use_sudo=False, cmd=run):
     """
     Append string (or list of strings) ``text`` to ``filename``.
 
@@ -260,30 +260,35 @@ def append(filename, text, use_sudo=False):
 
     If ``use_sudo`` is True, will use `sudo` instead of `run`.
 
+    You can also specify the command that should be written by providing the
+    ``cmd`` keyward argument.  It defaults to `run`.  Note that using ``use_sudo``
+    as `True` negates this setting.
+
     .. versionchanged:: 1.0
         Swapped the order of the ``filename`` and ``text`` arguments to be
         consistent with other functions in this module.
     """
-    write_to_file(filename, text, use_sudo=use_sudo)
+    write_to_file(filename, text, use_sudo=use_sudo, cmd=cmd)
 
-def write(filename, text, use_sudo=False):
+def write(filename, text, use_sudo=False, cmd=run):
     """
     Write string (or list of strings) ``text`` to ``filename``.
 
     This is identical to ``append()``, except that it overwrites any existing
     file, instead of appending to it.
     """
-    write_to_file(filename, text, use_sudo=use_sudo, overwrite=True)
+    write_to_file(filename, text, use_sudo=use_sudo, cmd=cmd, overwrite=True)
 
-def write_to_file(filename, text, use_sudo=False, overwrite=False):
+def write_to_file(filename, text, use_sudo=False, cmd=run, overwrite=False):
     """
     Append or overwrite a the string (or list of strings) ``text`` to
     ``filename``.
 
     This is the implementation for both ``write`` and ``append``.  Both call
     this with the proper value for ``overwrite``.
+
     """
-    func = use_sudo and sudo or run
+    func = use_sudo and sudo or cmd
     operator = overwrite and '>' or '>>'
     # Normalize non-list input to be a list
     if isinstance(text, str):
