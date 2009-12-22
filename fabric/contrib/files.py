@@ -298,6 +298,6 @@ def write_to_file(filename, text, use_sudo=False, cmd=run, overwrite=False):
             and line
             and exists(filename)):
             continue
-        func("echo '%s' %s %s" % (line.replace("'", r'\''), operator, filename))
+        func('echo "%s" %s %s' % (line.replace('"', '\\"'), operator, filename))
 
 
