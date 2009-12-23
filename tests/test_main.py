@@ -1,12 +1,14 @@
 from fudge.patcher import with_patched_object
-from nose.tools import eq_, raises
+from nose.tools import ok_, eq_, raises
 
 from fabric.decorators import hosts, roles
-from fabric.main import get_hosts, parse_arguments, _merge
+from fabric.main import get_hosts, parse_arguments, _merge, load_fabfile
 import fabric.state
 from fabric.state import _AttributeDict
 
 from utils import mock_streams
+import os
+import sys
 
 
 def test_argument_parsing():
@@ -117,3 +119,33 @@ def test_lazy_roles():
     def command():
         pass
     eq_hosts(command, ['a', 'b'])
+
+def support_fabfile(name):
+    return os.path.join(os.path.dirname(__file__), 'support', name)
+
+def test_implicit_discover():
+    """
+    Automatically includes all functions in a fabfile
+    """
+    implicit = support_fabfile("implicit_fabfile.py")
+    sys.path[0:0] = [os.path.dirname(implicit),]
+
+    funcs = load_fabfile(implicit)
+    ok_(len(funcs) == 2)
+    ok_("foo" in funcs)
+    ok_("bar" in funcs)
+
+    sys.path = sys.path[1:]
+
+def test_explicit_discover():
+    """
+    Only use those methods listed in __all__
+    """
+    explicit = support_fabfile("explicit_fabfile.py")
+    sys.path[0:0] = [os.path.dirname(explicit),]
+
+    funcs = load_fabfile(explicit)
+    ok_(len(funcs) == 1)
+    ok_("foo" in funcs)
+    ok_("bar" not in funcs)
+
