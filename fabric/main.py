@@ -13,6 +13,7 @@ from operator import add
 from optparse import OptionParser
 import os
 import sys
+import types
 
 from fabric import api # For checking callables against the API 
 from fabric.contrib import console, files, project # Ditto
@@ -148,8 +149,20 @@ def load_fab_tasks_from_module(imported):
         imported_vars = imported_vars.items()
     # Return dictionary of callables only (and don't include Fab operations or
     # underscored callables)
-    return dict(filter(is_task, imported_vars))
+    return extract_tasks(imported_vars)
 
+def extract_tasks(imported_vars):
+    tasks = {}
+    for tup in imported_vars:
+        name, callable = tup
+        if is_task(tup):
+            tasks[name] = callable
+            continue
+        if type(callable) is not types.ModuleType or getattr(callable, "FABRIC_TASK_MODULE", False) is False:
+            continue
+        for task_name, task in load_fab_tasks_from_module(callable).items():
+            tasks["%s.%s" % (name, task_name)] = task
+    return tasks
 
 def parse_options():
     """
