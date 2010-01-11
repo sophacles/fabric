@@ -664,6 +664,18 @@ def local(command, capture=True):
     # If we were capturing, this will be a string; otherwise it will be None.
     return out
 
+def do(*args, **kwargs):
+    cmd = run
+    if hasattr(env, "run_as"):
+        if env.run_as == "local":
+            cmd = local
+        else:
+            if "sudo" in kwargs:
+                cmd = sudo
+                del kwargs['sudo']
+            else:
+                cmd = run
+    cmd(*args, **kwargs)
 
 def reboot(wait):
     """
