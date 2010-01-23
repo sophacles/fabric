@@ -21,6 +21,7 @@ from fabric.network import denormalize, interpret_host_string, disconnect_all
 from fabric import state # For easily-mockable access to roles, env and etc
 from fabric.state import commands, connections, env_options
 from fabric.utils import abort, indent
+from fabric import decorators
 
 
 # One-time calculation of "all internal callables" to avoid doing this on every
@@ -156,8 +157,11 @@ def extract_tasks(imported_vars):
     Handle extracting tasks from a given list of variables
     """
     tasks = {}
+    using_decorated_tasks = False
     for tup in imported_vars:
         name, callable = tup
+        if callable == decorators.task:
+            using_decorated_tasks = True
         if is_task(tup):
             tasks[name] = callable
             continue
@@ -165,6 +169,9 @@ def extract_tasks(imported_vars):
             continue
         for task_name, task in load_fab_tasks_from_module(callable).items():
             tasks["%s.%s" % (name, task_name)] = task
+
+    if using_decorated_tasks:
+        tasks = dict([(name, new_task) for name, new_task in tasks.items() if new_task == decorators.task])
     return tasks
 
 def parse_options():
