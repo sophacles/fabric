@@ -2,6 +2,7 @@
 Convenience decorators for use in fabfiles.
 """
 
+from fabric.tasks import Task
 from functools import wraps
 
 
@@ -78,3 +79,7 @@ def runs_once(func):
             decorated.has_run = True
             return func(*args, **kwargs)
     return decorated
+
+def task(func):
+    return Task()
+
