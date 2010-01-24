@@ -81,4 +81,5 @@ def runs_once(func):
 
 def task(func):
     pass
+task.is_fabric_task = True
 
