@@ -2,8 +2,15 @@
 Convenience decorators for use in fabfiles.
 """
 
+from fabric import tasks
 from functools import wraps
 
+"""
+Convenience variable to using an instance of the Task object as a decorator.
+
+See `fabric.tasks.Task` for more information.
+"""
+task = tasks.Task()
 
 def hosts(*host_list):
     """
@@ -79,7 +86,4 @@ def runs_once(func):
             return func(*args, **kwargs)
     return decorated
 
-def task(func):
-    pass
-task.is_fabric_task = True
 
