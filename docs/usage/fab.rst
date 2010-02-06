@@ -199,7 +199,8 @@ Answering both these needs is the concept of "per-task arguments", which is a
 special syntax you can tack onto the end of any task name:
 
 * Use a colon (``:``) to separate the task name from its arguments;
-* Use commas (``,``) to separate arguments from one another;
+* Use commas (``,``) to separate arguments from one another, may be escaped
+  with (``\,``);
 * Use equals signs (``=``) for keyword arguments, or omit them for positional
   arguments;
 
@@ -207,10 +208,12 @@ Additionally, since this process involves string parsing, all values will end
 up as Python strings, so plan accordingly. (We hope to improve upon this in
 future versions of Fabric, provided an intuitive syntax can be found.)
 
-For example, a "create a new user" task might be defined like so (omitting the
-actual logic for brevity)::
+For example, a "create a new user" task might be defined like so (omitting most
+of the actual logic for brevity)::
 
-    def new_user(username, admin='no'):
+    def new_user(username, admin='no', comment="No comment provided"):
+        # record adding this user
+        log_action("New User (%s): %s" % (username, comment))
         pass
 
 You can specify just the username::
@@ -229,10 +232,21 @@ Or mix and match, just like in Python::
 
     $ fab new_user:myusername,admin=yes
 
+To provide a comment for the log, with a comma::
+    $ fab new_user:myusername,admin=no,comment='Gary\, new developer (starts Monday)'
+
+The single quotes around the comment value are necessary. In this case it is
+for a couple of reasons. First, the (``\,``) will be a shell syntax error,
+without the quotes (``\\,``) is needed. The second reason is that the quotes
+allow for spaces and parens within the comment, otherwise the shell will
+interpret them as new argument (thus resulting in fabric thinking they are
+different tasks!).
+
+
 All of the above are translated into the expected Python function calls. For
 example, the last call above would become::
 
-    >>> new_user('myusername', admin='yes')
+    >>> new_user('myusername', admin='yes', comment='Gary, new developer (starts Monday)')
 
 Roles and hosts
 ---------------

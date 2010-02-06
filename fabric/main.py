@@ -14,7 +14,7 @@ from optparse import OptionParser
 import os
 import sys
 
-from fabric import api # For checking callables against the API 
+from fabric import api # For checking callables against the API
 from fabric.contrib import console, files, project # Ditto
 from fabric.network import denormalize, interpret_host_string, disconnect_all
 from fabric import state # For easily-mockable access to roles, env and etc
@@ -242,6 +242,31 @@ def display_command(command):
         print("No detailed information available for command '%s':" % command)
     sys.exit(0)
 
+def escape_split(sep, argstr):
+    """
+    Allows for escaping of the separator: e.g. task:arg='foo\, bar'
+
+    It should be noted that the way bash et. al. do command line parsing, those single
+    quotes are required.
+    """
+    magicsep = r'\%s' % sep
+
+    if not magicsep in argstr:
+        return argstr.split(sep)
+
+    before, _, after = argstr.partition(magicsep)
+    startlist = before.split(sep) # a regular split is fine here
+    unfinished = startlist[-1]
+    startlist = startlist[:-1]
+
+    # recurse because there may be more escaped separators
+    endlist = escape_split(sep, after)
+
+    # finish building the escaped value. we use endlist[0] becaue the first part of the
+    # string sent in recursion is the rest of the escaped value.
+    unfinished += sep + endlist[0]
+
+    return startlist + [unfinished] + endlist[1:] # put together all the parts
 
 def parse_arguments(arguments):
     """
