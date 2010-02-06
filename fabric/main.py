@@ -282,7 +282,7 @@ def parse_arguments(arguments):
         roles = []
         if ':' in cmd:
             cmd, argstr = cmd.split(':', 1)
-            for pair in argstr.split(','):
+            for pair in escape_split(',', argstr):
                 k, _, v = pair.partition('=')
                 if v:
                     # Catch, interpret host/hosts/role/roles kwargs
