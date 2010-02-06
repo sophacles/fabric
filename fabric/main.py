@@ -14,7 +14,7 @@ from optparse import OptionParser
 import os
 import sys
 
-from fabric import api # For checking callables against the API 
+from fabric import api # For checking callables against the API
 from fabric.contrib import console, files, project # Ditto
 from fabric.network import denormalize, interpret_host_string, disconnect_all
 from fabric import state # For easily-mockable access to roles, env and etc
@@ -385,6 +385,7 @@ def main():
         # Find local fabfile path or abort
         fabfile = find_fabfile()
         if not fabfile:
+            parser.print_help()
             abort("Couldn't find any fabfiles!")
 
         # Store absolute path to fabfile in case anyone needs it
