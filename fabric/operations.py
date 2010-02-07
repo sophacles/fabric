@@ -17,7 +17,7 @@ from traceback import format_exc
 from contextlib import closing
 
 from fabric.context_managers import settings
-from fabric.network import output_thread, needs_host
+from fabric.network import output_thread, needs_host, join_host_string, normalize
 from fabric.state import env, connections, output
 from fabric.utils import abort, indent, warn, fastprint
 
@@ -49,7 +49,6 @@ def _handle_failure(message, exception=None):
     return func(message)
 
 
-
 def _shell_escape(string):
     """
     Escape double quotes, backticks and dollar signs in given ``string``.
@@ -71,7 +70,18 @@ class _AttributeString(str):
     Simple string subclass to allow arbitrary attribute access.
     """
 
+def get_conn_key():
+    """
+    Examine the environment and return the appropriate connection based on the settings.
 
+    If env.host, env.user, or env.port are set, they are valued OVER what is in the
+    host_string.
+    """
+    usera, hosta, porta = normalize(env.host_string)
+    user = usera if not env.user else env.user
+    host = hosta if not env.host else env.host
+    port = porta if not env.host else env.host
+    return join_host_string(user,host,port)
 
 # Can't wait till Python versions supporting 'def func(*args, foo=bar)' become
 # widespread :(
@@ -86,9 +96,9 @@ def require(*keys, **kwargs):
     The optional keyword argument ``used_for`` may be a string, which will be
     printed in the error output to inform users why this requirement is in
     place. ``used_for`` is printed as part of a string similar to::
-    
+
         "Th(is|ese) variable(s) (are|is) used for %s"
-        
+
     so format it appropriately.
 
     The optional keyword argument ``provided_by`` may be a list of functions or
@@ -158,7 +168,7 @@ def prompt(text, key=None, default='', validate=None):
     a trailing space after the ``[foo]``.)
 
     The optional keyword argument ``validate`` may be a callable or a string:
-    
+
     * If a callable, it is called with the user's input, and should return the
       value to be stored on success. On failure, it should raise an exception
       with an exception message, which will be printed to the user.
@@ -172,20 +182,20 @@ def prompt(text, key=None, default='', validate=None):
     hits ``Ctrl-C``).
 
     Examples::
-    
+
         # Simplest form:
         environment = prompt('Please specify target environment: ')
-        
+
         # With default, and storing as env.dish:
         prompt('Specify favorite dish: ', 'dish', default='spam & eggs')
-        
+
         # With validation, i.e. requiring integer input:
         prompt('Please specify process nice level: ', key='nice', validate=int)
-        
+
         # With validation against a regular expression:
         release = prompt('Please supply a release name',
                 validate=r'^\w+-\d+(\.\d+)?$')
-    
+
     """
     # Store previous env value for later display, if necessary
     if key:
@@ -244,7 +254,7 @@ def prompt(text, key=None, default='', validate=None):
 def put(local_path, remote_path, mode=None):
     """
     Upload one or more files to a remote host.
-    
+
     ``local_path`` may be a relative or absolute local file path, and may
     contain shell-style wildcards, as understood by the Python ``glob`` module.
     Tilde expansion (as implemented by ``os.path.expanduser``) is also
@@ -259,15 +269,15 @@ def put(local_path, remote_path, mode=None):
     also set the mode explicitly by specifying the ``mode`` keyword argument,
     which sets the numeric mode of the remote file. See the ``os.chmod``
     documentation or ``man chmod`` for the format of this argument.
-    
+
     Examples::
-    
+
         put('bin/project.zip', '/tmp/project.zip')
         put('*.py', 'cgi-bin/')
         put('index.html', 'index.html', mode=0755)
-    
+
     """
-    ftp = connections[env.host_string].open_sftp()
+    ftp = connections[get_conn_key()].open_sftp()
     with closing(ftp) as ftp:
         # Expand tildes (assumption: default remote cwd is user $HOME)
         remote_path = remote_path.replace('~', ftp.normalize('.'))
@@ -283,7 +293,7 @@ def put(local_path, remote_path, mode=None):
         if not globs:
             raise ValueError, "'%s' is not a valid local path or glob." \
                 % local_path
-    
+
         # Iterate over all given local files
         for lpath in globs:
             # If remote path is directory, tack on the local filename
@@ -316,7 +326,7 @@ def put(local_path, remote_path, mode=None):
 def get(remote_path, local_path):
     """
     Download a file from a remote host.
-    
+
     ``remote_path`` should point to a specific file, while ``local_path`` may
     be a directory (in which case the remote filename is preserved) or
     something else (in which case the downloaded file is renamed). Tilde
@@ -337,7 +347,7 @@ def get(remote_path, local_path):
 
     For example, the following snippet will produce two files on your local
     system, called ``server.log.host1`` and ``server.log.host2`` respectively::
-   
+
         @hosts('host1', 'host2')
         def my_download_task():
             get('/var/log/server.log', 'server.log')
@@ -345,7 +355,7 @@ def get(remote_path, local_path):
     However, with a single host (e.g. ``@hosts('host1')``), no suffixing is
     performed, leaving you with a single, pristine ``server.log``.
     """
-    ftp = connections[env.host_string].open_sftp()
+    ftp = connections[get_conn_key()].open_sftp()
     with closing (ftp) as ftp:
         # Expand tildes (assumption: default remote cwd is user $HOME)
         remote_path = remote_path.replace('~', ftp.normalize('.'))
@@ -481,7 +491,7 @@ def _run_command(command, shell=True, pty=False, sudo=False, user=None):
         print("[%s] %s: %s" % (env.host_string, which, wrapped_command))
     elif output.running:
         print("[%s] %s: %s" % (env.host_string, which, given_command))
-    channel = connections[env.host_string]._transport.open_session()
+    channel = connections[get_conn_key()]._transport.open_session()
     # Create pty if necessary (using Paramiko default options, which as of
     # 1.7.4 is vt100 $TERM @ 80x24 characters)
     if pty or env.always_use_pty:
@@ -494,10 +504,10 @@ def _run_command(command, shell=True, pty=False, sudo=False, user=None):
         capture=capture_stdout)
     err_thread = output_thread("[%s] err" % env.host_string, channel,
         stderr=True, capture=capture_stderr)
-    
+
     # Close when done
     status = channel.recv_exit_status()
-    
+
     # Wait for threads to exit so we aren't left with stale threads
     out_thread.join()
     err_thread.join()
@@ -554,11 +564,11 @@ def run(command, shell=True, pty=False):
     complain (or, even more rarely, refuse to run) if a tty is not present.
 
     Examples::
-    
+
         run("ls /var/www/")
         run("ls /home/myuser", shell=False)
         output = run('ls /var/www/site1')
-    
+
     .. versionchanged:: 1.0
         Added the ``succeeded`` attribute.
     .. versionchanged:: 1.0
@@ -582,14 +592,14 @@ def sudo(command, shell=True, pty=False, user=None):
     ``user`` may likewise be a string or an int.
 
     Examples::
-    
+
         sudo("~/install_script.py")
         sudo("mkdir /var/www/new_docroot", user="www-data")
         sudo("ls /home/jdoe", user=1001)
         result = sudo("ls /tmp/")
-    
+
     """
-    return _run_command(command, shell, pty, sudo=True, user=user) 
+    return _run_command(command, shell, pty, sudo=True, user=user)
 
 
 def local(command, capture=True):
@@ -604,7 +614,7 @@ def local(command, capture=True):
     stdout as a string, and will not print anything to the user. As with `run`
     and `sudo`, this return value exhibits the ``return_code``, ``stderr``,
     ``failed`` and ``succeeded`` attributes. See `run` for details.
-    
+
     .. note::
         `local`'s capturing behavior differs from the default behavior of `run`
         and `sudo` due to the different mechanisms involved: it is difficult to
@@ -672,9 +682,9 @@ def reboot(wait):
     prompts.
     """
     sudo('reboot')
-    client = connections[env.host_string]
+    client = connections[get_conn_key()]
     client.close()
-    del connections[env.host_string]
+    del connections[get_conn_key()]
     if output.running:
         fastprint("Waiting for reboot: ")
         per_tick = 5
