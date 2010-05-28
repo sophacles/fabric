@@ -8,7 +8,7 @@ import tempfile
 import re
 import os
 
-from fabric.api import *
+from fabric.api import run, sudo, settings, put, hide, abort
 
 
 def exists(path, use_sudo=False, verbose=False):
@@ -214,7 +214,7 @@ def comment(filename, regex, use_sudo=False, char='#', backup='.bak'):
     )
 
 
-def contains(filename, text, exact=False, use_sudo=False):
+def contains(text, filename, exact=False, use_sudo=False):
     """
     Return True if ``filename`` contains ``text``.
 
@@ -228,10 +228,6 @@ def contains(filename, text, exact=False, use_sudo=False):
     invocation.
 
     If ``use_sudo`` is True, will use `sudo` instead of `run`.
-
-    .. versionchanged:: 1.0
-        Swapped the order of the ``filename`` and ``text`` arguments to be
-        consistent with other functions in this module.
     """
     func = use_sudo and sudo or run
     if exact:
@@ -243,34 +239,35 @@ def contains(filename, text, exact=False, use_sudo=False):
         ))
 
 
-def append(filename, text, use_sudo=False):
+def append(text, filename, use_sudo=False, partial=True):
     """
     Append string (or list of strings) ``text`` to ``filename``.
 
     When a list is given, each string inside is handled independently (but in
     the order given.)
 
-    If ``text`` is already found as a discrete line in ``filename``, the append
-    is not run, and None is returned immediately. Otherwise, the given text is
-    appended to the end of the given ``filename`` via e.g. ``echo '$text' >>
-    $filename``.
+    If ``text`` is already found in ``filename``, the append is not run, and
+    None is returned immediately. Otherwise, the given text is appended to the
+    end of the given ``filename`` via e.g. ``echo '$text' >> $filename``.
+
+    The test for whether ``text`` already exists defaults to being partial
+    only, as in ``^<text>``. Specifying ``partial=False`` will change the
+    effective regex to ``^<text>$``.
 
     Because ``text`` is single-quoted, single quotes will be transparently 
     backslash-escaped.
 
     If ``use_sudo`` is True, will use `sudo` instead of `run`.
 
-    .. versionchanged:: 1.0
-        Swapped the order of the ``filename`` and ``text`` arguments to be
-        consistent with other functions in this module.
+    .. versionchanged:: 0.9.1
+        Added the ``partial`` keyword argument.
     """
     func = use_sudo and sudo or run
     # Normalize non-list input to be a list
     if isinstance(text, str):
         text = [text]
     for line in text:
-        if (contains(filename, '^' + re.escape(line), use_sudo=use_sudo)
-            and line
-            and exists(filename)):
+        if (contains('^' + re.escape(line) + ('' if partial else '$'), filename, use_sudo=use_sudo)
+            and line):
             continue
         func("echo '%s' >> %s" % (line.replace("'", r'\''), filename))
