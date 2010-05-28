@@ -20,7 +20,7 @@ win32 = sys.platform in ['win32', 'cygwin']
 
 #
 # Environment dictionary - support structures
-# 
+#
 
 class _AttributeDict(dict):
     """
@@ -141,7 +141,7 @@ env_options = [
         help="comma-separated list of roles to operate on"
     ),
 
-    make_option('-i', 
+    make_option('-i',
         action='append',
         dest='key_filename',
         default=None,
@@ -163,13 +163,8 @@ env_options = [
     ),
 
     make_option('-f', '--fabfile',
-<<<<<<< HEAD
-        default='fabfile',
-        help="name of or path to a fabfile module or package, e.g. 'path/to/fabfile.py' or 'myfab'"
-=======
         default='fabfile.py',
         help="Python module file to import, e.g. '../other.py'"
->>>>>>> 36e48f26b8100f193dcff297f3e1375166851dc2
     ),
 
     make_option('-w', '--warn-only',
@@ -206,7 +201,7 @@ env_options = [
         default=False,
         help="force use of pseudo-terminal in run/sudo"
     )
-    
+
 ]
 
 
@@ -221,7 +216,7 @@ env_options = [
 # preserving DRY: anything in here is generally not settable via the command
 # line.
 env = _AttributeDict({
-    'all_hosts': None, 
+    'all_hosts': None,
     'command': None,
     'cwd': '', # Must be empty string, not None, for concatenation purposes
     'host': None,
@@ -288,7 +283,7 @@ class _AliasDict(_AttributeDict):
     This also means they will not show up in e.g. ``dict.keys()``.
 
     ..note::
-        
+
         Aliases are recursive, so you may refer to an alias within the key list
         of another alias. Naturally, this means that you can end up with
         infinite loops if you're not careful.
