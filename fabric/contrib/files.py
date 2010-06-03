@@ -254,17 +254,20 @@ def contains(filename, text, exact=False, use_sudo=False, cmd=run):
         ))
 
 
-def append(filename, text, use_sudo=False, cmd=run):
+def append(filename, text, use_sudo=False, partial=True, cmd=run):
     """
     Append string (or list of strings) ``text`` to ``filename``.
 
     When a list is given, each string inside is handled independently (but in
     the order given.)
 
-    If ``text`` is already found as a discrete line in ``filename``, the append
-    is not run, and None is returned immediately. Otherwise, the given text is
-    appended to the end of the given ``filename`` via e.g. ``echo '$text' >>
-    $filename``.
+    If ``text`` is already found in ``filename``, the append is not run, and
+    None is returned immediately. Otherwise, the given text is appended to the
+    end of the given ``filename`` via e.g. ``echo '$text' >> $filename``.
+
+    The test for whether ``text`` already exists defaults to being partial
+    only, as in ``^<text>``. Specifying ``partial=False`` will change the
+    effective regex to ``^<text>$``.
 
     Because ``text`` is single-quoted, single quotes will be transparently 
     backslash-escaped.
@@ -275,22 +278,25 @@ def append(filename, text, use_sudo=False, cmd=run):
     ``cmd`` keyward argument.  It defaults to `run`.  Note that using ``use_sudo``
     as `True` negates this setting.
 
+    .. versionchanged:: 0.9.1
+        Added the ``partial`` keyword argument.
+
     .. versionchanged:: 1.0
         Swapped the order of the ``filename`` and ``text`` arguments to be
         consistent with other functions in this module.
     """
-    write_to_file(filename, text, use_sudo=use_sudo, cmd=cmd)
+    write_to_file(filename, text, use_sudo=use_sudo, partial=True, cmd=cmd)
 
-def write(filename, text, use_sudo=False, cmd=run):
+def write(filename, text, use_sudo=False, partial=True, cmd=run):
     """
     Write string (or list of strings) ``text`` to ``filename``.
 
     This is identical to ``append()``, except that it overwrites any existing
     file, instead of appending to it.
     """
-    write_to_file(filename, text, use_sudo=use_sudo, cmd=cmd, overwrite=True)
+    write_to_file(filename, text, use_sudo=use_sudo, partial=True, cmd=cmd, overwrite=True)
 
-def write_to_file(filename, text, use_sudo=False, cmd=run, overwrite=False):
+def write_to_file(filename, text, use_sudo=False, partial=True, cmd=run, overwrite=False):
     """
     Append or overwrite a the string (or list of strings) ``text`` to
     ``filename``.
@@ -305,9 +311,9 @@ def write_to_file(filename, text, use_sudo=False, cmd=run, overwrite=False):
     if isinstance(text, str):
         text = [text]
     for line in text:
-        if (contains(filename, '^' + re.escape(line), use_sudo=use_sudo, cmd=cmd)
-            and line
-            and exists(filename, cmd=cmd)):
+        regex = '^' + re.escape(line) + ('' if partial else '$')
+        if (exists(filename) and line
+            and contains(filename, regex, use_sudo=use_sudo, cmd=cmd)):
             continue
         func('echo "%s" %s %s' % (line.replace('"', '\\"'), operator, filename))
 

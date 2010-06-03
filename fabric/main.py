@@ -106,7 +106,11 @@ def is_task(tup):
 
 def load_fabfile(path):
     """
-    Import given fabfile path and return dictionary of its public callables.
+    Import given fabfile path and return (docstring, callables).
+
+    Specifically, the fabfile's ``__doc__`` attribute (a string) and a
+    dictionary of ``{'name': callable}`` containing all callables which pass
+    the "is a Fabric task" test.
     """
     # Get directory and fabfile name
     directory, fabfile = os.path.split(path)
@@ -151,7 +155,7 @@ def load_fab_tasks_from_module(imported):
         imported_vars = imported_vars.items()
     # Return dictionary of callables only (and don't include Fab operations or
     # underscored callables)
-    return extract_tasks(imported_vars)
+    return imported_vars.__doc__, extract_tasks(imported_vars)
 
 def extract_tasks(imported_vars):
     """
@@ -169,7 +173,7 @@ def extract_tasks(imported_vars):
             continue
         if type(callable) is not types.ModuleType or getattr(callable, "FABRIC_TASK_MODULE", False) is False:
             continue
-        for task_name, task in load_fab_tasks_from_module(callable).items():
+        for task_name, task in load_fab_tasks_from_module(callable)[1].items():
             tasks["%s.%s" % (name, task_name)] = task
 
     if using_decorated_tasks:
@@ -235,10 +239,15 @@ def parse_options():
     return parser, opts, args
 
 
-def list_commands():
+def list_commands(docstring):
     """
-    Print all found commands/tasks, then exit. Invoked with -l/--list.
+    Print all found commands/tasks, then exit. Invoked with ``-l/--list.``
+
+    If ``docstring`` is non-empty, it will be printed before the task list.
     """
+    if docstring:
+        trailer = "\n" if not docstring.endswith("\n") else ""
+        print(docstring + trailer)
     print("Available commands:\n")
     # Want separator between name, description to be straight col
     max_len = reduce(lambda a, b: max(a, len(b)), commands.keys(), 0)
@@ -420,6 +429,13 @@ def main():
             print("Fabric %s" % state.env.version)
             sys.exit(0)
 
+        # Handle case where we were called bare, i.e. just "fab", and print
+        # a help message.
+        if not (options.list_commands or options.display or arguments
+            or remainder_arguments):
+            parser.print_help()
+            sys.exit(1)
+
         # Load settings from user settings file, into shared env dict.
         state.env.update(load_settings(state.env.rcfile))
 
@@ -434,7 +450,8 @@ def main():
         # Load fabfile (which calls its module-level code, including
         # tweaks to env values) and put its commands in the shared commands
         # dict
-        commands.update(load_fabfile(fabfile))
+        docstring, callables = load_fabfile(fabfile)
+        commands.update(callables)
 
         # Abort if no commands found
         if not commands and not remainder_arguments:
@@ -446,7 +463,7 @@ def main():
 
         # Handle list-commands option (now that commands are loaded)
         if options.list_commands:
-            list_commands()
+            list_commands(docstring)
 
         # Handle show (command-specific help) option
         if options.display:
