@@ -2,16 +2,17 @@
 Convenience decorators for use in fabfiles.
 """
 
-from fabric import tasks
+from fabric.tasks import taskdecorator
 from functools import wraps
 
+@taskdecorator
 def task(func):
     """
     Decorator defining a function as a task.
 
     This is a convenience wrapper around `tasks.WrappedCallableTask`.
     """
-    return tasks.WrappedCallableTask(func)
+    return func
 
 def hosts(*host_list):
     """
@@ -28,12 +29,10 @@ def hosts(*host_list):
     Note that this decorator actually just sets the function's ``.hosts``
     attribute, which is then read prior to executing the function.
     """
+    @taskdecorator
     def attach_hosts(func):
-        @wraps(func)
-        def inner_decorator(*args, **kwargs):
-            return func(*args, **kwargs)
-        inner_decorator.hosts = list(host_list)
-        return inner_decorator
+        func.hosts = list(host_list)
+        return func
     return attach_hosts
 
 
@@ -58,15 +57,14 @@ def roles(*role_list):
     Note that this decorator actually just sets the function's ``.roles``
     attribute, which is then read prior to executing the function.
     """
+    @taskdecorator
     def attach_roles(func):
-        @wraps(func)
-        def inner_decorator(*args, **kwargs):
-            return func(*args, **kwargs)
-        inner_decorator.roles = list(role_list)
-        return inner_decorator
+        func.roles = list(role_list)
+        return func
     return attach_roles
 
 
+@taskdecorator
 def runs_once(func):
     """
     Decorator preventing wrapped function from running more than once.
@@ -78,13 +76,15 @@ def runs_once(func):
     Any function wrapped with this decorator will silently fail to execute the
     2nd, 3rd, ..., Nth time it is called, and will return None in that instance.
     """
-    @wraps(func)
+    g = func.run # avoid some issues w/ name overriding
+    @wraps(g)
     def decorated(*args, **kwargs):
-        if hasattr(decorated, 'has_run'):
+        if hasattr(func, 'has_run'):
             return
         else:
-            decorated.has_run = True
-            return func(*args, **kwargs)
-    return decorated
+            func.has_run = True
+            return g(*args, **kwargs)
+    func.run = decorated
+    return func
 
 
