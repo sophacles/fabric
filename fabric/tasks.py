@@ -36,5 +36,3 @@ def taskdecorator(taskmodifier):
         return taskmodifier(target_task)
     return taskfactory
 
-
-

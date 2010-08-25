@@ -13,7 +13,7 @@ import sys
 
 def test_argument_parsing():
     for args, output in [
-        # Basic 
+        # Basic
         ('abc', ('abc', [], {}, [], [])),
         # Arg
         ('ab:c', ('ab', ['c'], {}, [], [])),
@@ -37,7 +37,7 @@ def test_argument_parsing():
 
 def eq_hosts(command, host_list):
     eq_(set(get_hosts(command, [], [])), set(host_list))
-    
+
 
 def test_hosts_decorator_by_itself():
     """
@@ -130,7 +130,7 @@ def test_implicit_discover():
     implicit = support_fabfile("implicit_fabfile.py")
     sys.path[0:0] = [os.path.dirname(implicit),]
 
-    _docs, funcs = load_fabfile(implicit)
+    docs, funcs = load_fabfile(implicit)
     ok_(len(funcs) == 2)
     ok_("foo" in funcs)
     ok_("bar" in funcs)
@@ -144,7 +144,7 @@ def test_explicit_discover():
     explicit = support_fabfile("explicit_fabfile.py")
     sys.path[0:0] = [os.path.dirname(explicit),]
 
-    _docs, funcs = load_fabfile(explicit)
+    docs, funcs = load_fabfile(explicit)
     ok_(len(funcs) == 1)
     ok_("foo" in funcs)
     ok_("bar" not in funcs)
@@ -153,7 +153,7 @@ def test_allow_registering_modules():
     module = support_fabfile('module_fabfile.py')
     sys.path[0:0] = [os.path.dirname(module),]
 
-    _docs, funcs = load_fabfile(module)
+    docs, funcs = load_fabfile(module)
     ok_(len(funcs) == 2)
     ok_('tasks.hello' in funcs)
     ok_('tasks.world' in funcs)
@@ -162,7 +162,7 @@ def test_modules_should_pay_attention_to_all_and_explicit_discovery():
     module = support_fabfile('module_explicit.py')
     sys.path[0:0] = [os.path.dirname(module),]
 
-    _docs, funcs = load_fabfile(module)
+    docs, funcs = load_fabfile(module)
     ok_(len(funcs) == 1)
     ok_('tasks.hello' in funcs)
     ok_('tasks.world' not in funcs)
@@ -171,7 +171,7 @@ def test_should_load_decorated_tasks_only_if_one_is_found():
     module = support_fabfile('decorated_fabfile.py')
     sys.path[0:0] = [os.path.dirname(module),]
 
-    _docs, funcs = load_fabfile(module)
+    docs, funcs = load_fabfile(module)
     eq_(1, len(funcs))
     ok_('foo' in funcs)
 
@@ -179,13 +179,13 @@ def test_modules_are_still_loaded_if_fabfile_contains_decorated_task():
     module = support_fabfile('decorated_fabfile_with_modules.py')
     sys.path[0:0] = [os.path.dirname(module),]
 
-    _docs, funcs = load_fabfile(module)
+    docs, funcs = load_fabfile(module)
     eq_(3, len(funcs))
 
 def test_modules_pay_attention_to_task_decorator():
     module = support_fabfile('decorated_fabfile_with_decorated_module.py')
     sys.path[0:0] = [os.path.dirname(module),]
 
-    _docs, funcs = load_fabfile(module)
+    docs, funcs = load_fabfile(module)
     eq_(2, len(funcs))
 

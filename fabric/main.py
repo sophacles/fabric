@@ -15,7 +15,7 @@ import os
 import sys
 import types
 
-from fabric import api # For checking callables against the API 
+from fabric import api # For checking callables against the API
 from fabric.contrib import console, files, project # Ditto
 from fabric.network import denormalize, interpret_host_string, disconnect_all
 from fabric import state # For easily-mockable access to roles, env and etc
@@ -153,9 +153,10 @@ def load_fab_tasks_from_module(imported):
         imported_vars = [(name, imported_vars[name]) for name in imported_vars if name in imported_vars["__all__"]]
     else:
         imported_vars = imported_vars.items()
-    # Return dictionary of callables only (and don't include Fab operations or
+    # Return a two-tuple value.  First is the documentation, second is a
+    # dictionary of callables only (and don't include Fab operations or
     # underscored callables)
-    return imported_vars.__doc__, extract_tasks(imported_vars)
+    return imported.__doc__, extract_tasks(imported_vars)
 
 def extract_tasks(imported_vars):
     """
