@@ -12,6 +12,7 @@ def task(func):
 
     This is a convenience wrapper around `tasks.WrappedCallableTask`.
     """
+    func.use_decorated = True
     return func
 
 def hosts(*host_list):
