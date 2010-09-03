@@ -73,14 +73,13 @@ def runs_once(func):
     Any function wrapped with this decorator will silently fail to execute the
     2nd, 3rd, ..., Nth time it is called, and will return None in that instance.
     """
-    g = func.run # avoid some issues w/ name overriding
-    @wraps(g)
+    @wraps(func)
     def decorated(*args, **kwargs):
         if hasattr(func, 'has_run'):
             return
         else:
             func.has_run = True
-            return g(*args, **kwargs)
+            return func(*args, **kwargs)
     func.run = decorated
     return func
 
