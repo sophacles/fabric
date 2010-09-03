@@ -12,9 +12,7 @@ def task(func):
 
     This is a convenience wrapper around `tasks.WrappedCallableTask`.
     """
-    if not isinstance(func, tasks.Task):
-        func = tasks.WrappedCallableTask(func)
-    return func
+    return tasks.WrappedCallableTask(func)
 
 def hosts(*host_list):
     """
