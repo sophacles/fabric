@@ -1,7 +1,7 @@
 from fudge.patcher import with_patched_object
 from nose.tools import ok_, eq_, raises
 
-from fabric.decorators import hosts, roles
+from fabric.decorators import hosts, roles, task
 from fabric.main import get_hosts, parse_arguments, _merge, load_fabfile
 import fabric.state
 from fabric.state import _AttributeDict
@@ -88,6 +88,27 @@ def test_hosts_decorator_overrides_env_hosts():
     If @hosts is used it replaces any env.hosts value
     """
     @hosts('bar')
+    def command():
+        pass
+    eq_hosts(command, ['bar'])
+    assert 'foo' not in get_hosts(command, [], [])
+
+@with_patched_object('fabric.state', 'env', {'hosts': ['foo']})
+def test_hosts_decorator_overrides_env_hosts_with_task_decorator_first():
+    """
+    If @hosts is used it replaces any env.hosts value even with @task
+    """
+    @task
+    @hosts('bar')
+    def command():
+        pass
+    eq_hosts(command, ['bar'])
+    assert 'foo' not in get_hosts(command, [], [])
+
+@with_patched_object('fabric.state', 'env', {'hosts': ['foo']})
+def test_hosts_decorator_overrides_env_hosts_with_task_decorator_last():
+    @hosts('bar')
+    @task
     def command():
         pass
     eq_hosts(command, ['bar'])
@@ -189,3 +210,11 @@ def test_modules_pay_attention_to_task_decorator():
     docs, funcs = load_fabfile(module)
     eq_(2, len(funcs))
 
+def test_class_based_tasks_are_found_with_proper_name():
+    module = support_fabfile('decorated_fabfile_with_classbased_task.py')
+    sys.path[0:0] = [os.path.dirname(module),]
+
+    docs, funcs = load_fabfile(module)
+    print funcs
+    eq_(1, len(funcs))
+    ok_('foo' in funcs)

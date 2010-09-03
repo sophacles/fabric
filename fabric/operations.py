@@ -19,7 +19,7 @@ from contextlib import closing
 from fabric.context_managers import settings
 from fabric.network import output_thread, needs_host
 from fabric.state import env, connections, output
-from fabric.utils import abort, indent, warn
+from fabric.utils import abort, indent, warn, puts
 
 
 def _handle_failure(message, exception=None):
@@ -688,15 +688,17 @@ def reboot(wait):
     After calling this operation, further execution of `run` or `sudo` will
     result in a normal reconnection to the server, including any password
     prompts.
+
+    .. versionadded:: 0.9.2
     """
     sudo('reboot')
     client = connections[env.host_string]
     client.close()
     del connections[env.host_string]
     if output.running:
-        puts("Waiting for reboot: ", flush=True)
+        puts("Waiting for reboot: ", flush=True, end='')
         per_tick = 5
         for second in range(int(wait / per_tick)):
-            puts(".", show_prefix=False, flush=True)
+            puts(".", show_prefix=False, flush=True, end='')
             time.sleep(per_tick)
         puts("done.\n", show_prefix=False, flush=True)

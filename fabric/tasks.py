@@ -9,9 +9,13 @@ class Task(object):
     directly.
     """
     name = 'undefined'
+    use_decorated = True
 
-    def __init__(self):
-        self.use_decorated = False
+    # TODO: make it so that this wraps other decorators as expected
+    # TODO: turn use_decorated to True by default so all classes that extend
+    #       from it cause them to be registered properly without having to
+    #       explicitly set use_decorated
+
     def run(self):
         raise NotImplementedError
 
@@ -24,18 +28,15 @@ class WrappedCallableTask(Task):
     """
     def __init__(self, callable):
         super(WrappedCallableTask, self).__init__()
-        self.run = callable
-        self.name = callable.__name__
+        self.wrapped = callable
+        self.__name__ = self.name = callable.__name__
         self.__doc__ = callable.__doc__
 
     def __call__(self, *args, **kwargs):
         return self.run(*args, **kwargs)
 
-def taskdecorator(taskmodifier):
-    @wraps(taskmodifier)
-    def taskfactory(target_task):
-        if not isinstance(target_task, Task):
-            target_task = WrappedCallableTask(target_task)
-        return taskmodifier(target_task)
-    return taskfactory
+    def run(self, *args, **kwargs):
+        return self.wrapped(*args, **kwargs)
 
+    def __getattr__(self, k):
+        return getattr(self.wrapped, k)

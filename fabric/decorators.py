@@ -5,15 +5,15 @@ Convenience decorators for use in fabfiles.
 from fabric.tasks import taskdecorator
 from functools import wraps
 
-@taskdecorator
+from . import tasks
+
 def task(func):
     """
     Decorator defining a function as a task.
 
     This is a convenience wrapper around `tasks.WrappedCallableTask`.
     """
-    func.use_decorated = True
-    return func
+    return tasks.WrappedCallableTask(func)
 
 def hosts(*host_list):
     """
@@ -65,7 +65,6 @@ def roles(*role_list):
     return attach_roles
 
 
-@taskdecorator
 def runs_once(func):
     """
     Decorator preventing wrapped function from running more than once.
@@ -75,15 +74,14 @@ def runs_once(func):
     typical use means "once per invocation of the ``fab`` program".
 
     Any function wrapped with this decorator will silently fail to execute the
-    2nd, 3rd, ..., Nth time it is called, and will return None in that instance.
+    2nd, 3rd, ..., Nth time it is called, and will return the value of the
+    original run.
     """
     g = func.run # avoid some issues w/ name overriding
     @wraps(g)
     def decorated(*args, **kwargs):
-        if hasattr(func, 'has_run'):
-            return
-        else:
-            func.has_run = True
-            return g(*args, **kwargs)
-    func.run = decorated
-    return func
+        if not hasattr(decorated, 'return_value'):
+            decorated.return_value = func(*args, **kwargs)
+        return decorated.return_value
+    return decorated
+
