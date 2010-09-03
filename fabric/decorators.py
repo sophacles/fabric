@@ -2,8 +2,17 @@
 Convenience decorators for use in fabfiles.
 """
 
-from fabric.tasks import taskdecorator
 from functools import wraps
+
+from . import tasks
+
+def taskdecorator(taskmodifier):
+    @wraps(taskmodifier)
+    def taskfactory(target_task):
+        if not isinstance(target_task, tasks.Task):
+            target_task = tasks.WrappedCallableTask(target_task)
+        return taskmodifier(target_task)
+    return taskfactory
 
 @taskdecorator
 def task(func):
