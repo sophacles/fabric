@@ -6,21 +6,14 @@ from functools import wraps
 
 from . import tasks
 
-def taskdecorator(taskmodifier):
-    @wraps(taskmodifier)
-    def taskfactory(target_task):
-        if not isinstance(target_task, tasks.Task):
-            target_task = tasks.WrappedCallableTask(target_task)
-        return taskmodifier(target_task)
-    return taskfactory
-
-@taskdecorator
 def task(func):
     """
     Decorator defining a function as a task.
 
     This is a convenience wrapper around `tasks.WrappedCallableTask`.
     """
+    if not isinstance(func, tasks.Task):
+        func = tasks.WrappedCallableTask(func)
     func.use_decorated = True
     return func
 
@@ -39,7 +32,7 @@ def hosts(*host_list):
     Note that this decorator actually just sets the function's ``.hosts``
     attribute, which is then read prior to executing the function.
     """
-    @taskdecorator
+    @task
     def attach_hosts(func):
         func.hosts = list(host_list)
         return func
@@ -67,14 +60,14 @@ def roles(*role_list):
     Note that this decorator actually just sets the function's ``.roles``
     attribute, which is then read prior to executing the function.
     """
-    @taskdecorator
+    @task
     def attach_roles(func):
         func.roles = list(role_list)
         return func
     return attach_roles
 
 
-@taskdecorator
+@task
 def runs_once(func):
     """
     Decorator preventing wrapped function from running more than once.
