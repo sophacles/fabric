@@ -31,7 +31,6 @@ def hosts(*host_list):
     Note that this decorator actually just sets the function's ``.hosts``
     attribute, which is then read prior to executing the function.
     """
-    @task
     def attach_hosts(func):
         func.hosts = list(host_list)
         return func
@@ -59,14 +58,12 @@ def roles(*role_list):
     Note that this decorator actually just sets the function's ``.roles``
     attribute, which is then read prior to executing the function.
     """
-    @task
     def attach_roles(func):
         func.roles = list(role_list)
         return func
     return attach_roles
 
 
-@task
 def runs_once(func):
     """
     Decorator preventing wrapped function from running more than once.
