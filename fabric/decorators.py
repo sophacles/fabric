@@ -14,7 +14,6 @@ def task(func):
     """
     if not isinstance(func, tasks.Task):
         func = tasks.WrappedCallableTask(func)
-    func.use_decorated = True
     return func
 
 def hosts(*host_list):
